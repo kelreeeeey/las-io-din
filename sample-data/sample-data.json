@@ -1,0 +1,12 @@
+{
+    "data": [
+        {
+            "filename": "Kronos 1 - Run 1 CMR-LDS-CNT-GR Main Pass _268PUC.las",
+            "well_name": "Kronos 1, Plover Formation, Browse Basin, Australia",
+            "link_source": "https://drive.google.com/file/d/1LEwVfqZABfsVxzRE-xTPLufR7RXFx616/view?usp=drive_link",
+            "dataset_citation": "Bormann P., Aursand P., Dilib F., Dischington P., Manral S. 2020. FORCE Machine Learning Competition.",
+            "link_repository": "https://github.com/bolgebrygg/Force-2020-Machine-Learning-competition",
+            "link_contest": "https://www.npd.no/en/force/events/machine-learning-contest-with-wells-and-seismic/"
+        }
+    ]
+}

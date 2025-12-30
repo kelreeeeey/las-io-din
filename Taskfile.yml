@@ -1,0 +1,31 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  test:
+    cmds:
+      - odin test lasio/ -o:speed -debug -show-timings -define:ODIN_TEST_THREADS=7 -define:ODIN_TEST_RANDOM_SEED=102
+    silent: false
+    aliases:
+      - t
+
+  build_lasloading:
+    cmds:
+      - odin build ./examples/load_and_print_info -out:./bin/load_and_print_info.exe -o:speed
+    silent: false
+    method: none
+    aliases:
+      - ex1b
+    generates:
+      - ./bin/load_and_print_info.exe
+    sources:
+      - ./examples/load_and_print_info/
+
+  lasloading:
+    cmds:
+      - ./bin/load_and_print_info.exe ./assets/example_1_canadian_well_logging_society.las
+    silent: false
+    method: none
+    aliases:
+      - ex1r
