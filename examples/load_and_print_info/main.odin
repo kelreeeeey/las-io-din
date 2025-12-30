@@ -2,7 +2,7 @@ package lasload
 
 import "core:fmt"
 import "core:os"
-import ls "shared:lasio"
+import ls "shared:lasiodin"
 
 main :: proc() {
 	if !(  len(os.args) >= 2  ) {
@@ -17,11 +17,9 @@ main :: proc() {
 		allocator=context.allocator,
 		temp_allocator=context.temp_allocator,
 	)
-	// defer ls.delete_las_data(las_file)
+	defer ls.delete_las_data(las_file)
 
-	if parsed_ok != nil {
-		fmt.printfln("Failed to parse the data, err: %v", parsed_ok)
-	}
+	if parsed_ok != nil { fmt.printfln("Failed to parse the data, err: %v", parsed_ok) }
 
 	curve_info : ^ls.CurveInformation
 	log_data   : ^ls.LogData
@@ -73,7 +71,7 @@ main :: proc() {
 
 	{ // log data
 		log_data = &las_file.log_data
-		n_rows := log_data.nrows
+		n_rows   := log_data.nrows
 		n_curves := log_data.ncurves
 		fmt.printfln("\tLog Curves: %v", las_file.other_info.len)
 		fmt.printfln("\t\tWRAP MODE: %v", log_data.wrap)

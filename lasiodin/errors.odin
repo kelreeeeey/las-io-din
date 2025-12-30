@@ -1,4 +1,4 @@
-package lasio
+package lasiodin
 
 import "core:os"
 import "core:io"

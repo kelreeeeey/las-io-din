@@ -5,7 +5,7 @@ version: '3'
 tasks:
   test:
     cmds:
-      - odin test lasio/ -o:speed -debug -show-timings -define:ODIN_TEST_THREADS=7 -define:ODIN_TEST_RANDOM_SEED=102
+      - odin test lasiodin/ -o:speed -debug -show-timings -define:ODIN_TEST_THREADS=7 -define:ODIN_TEST_RANDOM_SEED=102
     silent: false
     aliases:
       - t
@@ -29,3 +29,24 @@ tasks:
     method: none
     aliases:
       - ex1r
+
+  build_usage:
+    cmds:
+      - odin build ./examples/usage -out:./bin/usage.exe -o:speed
+    silent: false
+    method: none
+    aliases:
+      - ub
+    generates:
+      - ./bin/usage.exe
+    sources:
+      - ./examples/usage/
+
+  usage:
+    cmds:
+      - ./bin/usage.exe
+    silent: false
+    method: none
+    aliases:
+      - ur
+

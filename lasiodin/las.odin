@@ -1,5 +1,5 @@
 #+feature dynamic-literals
-package lasio
+package lasiodin
 
 // import "base:runtime"
 import "core:os"
@@ -71,16 +71,13 @@ load_las :: proc(
 		switch {
 
 			case strings.contains(next_line, "~W"):
-				well_info_header, next_line, vers_parse_err = parse_well_info(
-					file_name,
-					&bufio_reader,
-					next_line,
-					allocator=allocator)
-				if vers_parse_err != nil {
-					return las_data, vers_parse_err
-				} else {
-					las_data.well_info = well_info_header
-				}
+			well_info_header, next_line, vers_parse_err = parse_well_info(
+				file_name,
+				&bufio_reader,
+				next_line,
+				allocator=allocator)
+			if vers_parse_err != nil { return las_data, vers_parse_err }
+			else                     { las_data.well_info = well_info_header }
 
 			case strings.contains(next_line, "~C"):
 			curve_info_header, next_line, vers_parse_err = parse_curve_info(
@@ -92,7 +89,7 @@ load_las :: proc(
 				loc=loc,
 			)
 			if vers_parse_err != nil { delete(curve_info_header.curves); return las_data, vers_parse_err }
-			else { las_data.curve_info = curve_info_header }
+			else                     { las_data.curve_info = curve_info_header }
 
 			case strings.contains(next_line, "~P"):
 			params_info_header, next_line, vers_parse_err = parse_param_info(
@@ -115,9 +112,8 @@ load_las :: proc(
 				temp_allocator=temp_allocator,
 				loc=loc,
 			)
-
 			if vers_parse_err != nil { return las_data, vers_parse_err }
-			else { las_data.other_info = others_info_header }
+			else                     { las_data.other_info = others_info_header }
 
 			case strings.contains(next_line, "~A"):
 			log_datas_info_header, next_line, vers_parse_err = parse_ascii_log_info(

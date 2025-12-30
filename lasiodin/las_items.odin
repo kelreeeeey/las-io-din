@@ -1,4 +1,4 @@
-package lasio
+package lasiodin
 
 HeaderItem :: struct {
     mnemonic:          string,
@@ -37,11 +37,6 @@ delete_well_info :: proc(well_info: WellInformation) {
 CurveInformation :: struct {
     len:    i32,
     curves: map[int]HeaderItem,
-}
-
-@(private = "file")
-delete_curve_info :: proc(curve_info: CurveInformation) {
-	delete_map(curve_info.curves)
 }
 
 // Parameter informations, non-mandatory
@@ -92,29 +87,6 @@ SectionType :: union {
     []string,
 }
 
-FLAGS :: enum {
-	TILDE, // `~` character, indicating section
-	POUND, // `#` chatacter, indication comment
-	OTHER, // ` ` or `\t` chatacters, indication data
-}
-
-SectionFlags :: enum {
-    V, // version
-    W, // well information
-    C, // curve information
-    P, // parameter information
-    O, // other information
-    A, // ascii log data
-}
-
-
-// LAS Data
-Section :: struct {
-    name:  string,
-    flag:  SectionFlags,
-    items: SectionType,
-}
-
 LasData :: struct {
     file_name:      string,
     version:        Version,
@@ -127,26 +99,14 @@ LasData :: struct {
 
 delete_las_data :: proc(las_data: LasData, allocator:= context.allocator) {
 	delete(las_data.version.add)
-	delete_curve_info(las_data.curve_info)
-	// delete_param_info(las_data.parameter_info)
 
 	well_info := las_data.well_info
 	clear(&well_info.items)
-	// delete(las_data.well_info.items)
 
+	delete_map(las_data.curve_info.curves)
 	curve_info := las_data.curve_info
 	clear(&curve_info.curves)
-	// delete(las_data.curve_info.curves)
 
-	// delete(las_data.parameter_info.params)
-	// delete(las_data.other_info.info, allocator=allocator)
-
-	for _, log in las_data.log_data.logs {
-		delete(log, allocator=allocator)
-	}
+	for _, log in las_data.log_data.logs { delete(log, allocator=allocator) }
 	delete(las_data.log_data.logs)
-	// for key, log in las_data.log_data.logs {
-	// 	delete_key(key)
-	// 	delete(log)
-	// }
 }
