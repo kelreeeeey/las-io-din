@@ -77,8 +77,9 @@ Log Curves: 2
         LOG[6] 3        ==> [110.2, 110.2, 110.2]
         LOG[7] 3        ==> [5.5999999999999996, 5.5999999999999996, 105.59999999999999]
 ```
-(more:)
-<detail>
+
+<details><summary>Expand me to see more output</summary>
+	
 ```raw
 LasData{
         file_name = "./assets/example_1_canadian_well_logging_society.las",
@@ -336,4 +337,4 @@ LasData{
         },
 }
 ```
-</detail>
+</details>
