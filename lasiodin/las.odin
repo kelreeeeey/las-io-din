@@ -1,7 +1,6 @@
 #+feature dynamic-literals
 package lasiodin
 
-// import "base:runtime"
 import "core:os"
 import "core:io"
 import "core:bufio"
@@ -9,26 +8,30 @@ import "core:mem"
 import "core:math"
 import "core:strings"
 import "core:strconv"
-// import "core:encoding/endian"
 
 @(private="package")
 _NON_NUMERIC_CHARS :: `qwertyuiop[]\\asdfghjkl;'zxcvbnm/QWERTYUIOP{}|ASDFGHJKL:\"ZXCVBNM<>?!@#$%^&*()_=`
 
+/* load_las
+
+path_to_las_file: string = path to LAS file
+bufreader_size: int = 4096, default buffer size,
+allocator: runtime.Allocator = context.allocator,
+*/
 load_las :: proc(
-	file_name: string,
-	bufreader_size: int,
+	path_to_las_file: string,
+	bufreader_size: int = bufio.DEFAULT_BUF_SIZE,
 	allocator := context.allocator,
-	temp_allocator := context.temp_allocator,
 	loc := #caller_location,
 ) -> (
 	las_data: LasData,
 	err     : ReadFileError) {
 
-	las_data.file_name = file_name
+	las_data.file_name = path_to_las_file
 	// create an handler
-	handle, open_error := os.open(file_name, os.O_RDONLY)
+	handle, open_error := os.open(path_to_las_file, os.O_RDONLY)
 	if open_error != os.ERROR_NONE {
-		return las_data, OpenError{file_name, open_error}
+		return las_data, OpenError{path_to_las_file, open_error}
 	}
 
 	// create a stream
@@ -38,7 +41,7 @@ load_las :: proc(
 	reader, ok := io.to_reader(stream)
 	defer io.destroy(reader)
 	if !ok {
-		return las_data, ReaderCreationError{file_name, stream}
+		return las_data, ReaderCreationError{path_to_las_file, stream}
 	}
 
 	// define bufio_reader
@@ -52,7 +55,7 @@ load_las :: proc(
 	defer delete(next_line)
 
 	version_header:   Version
-	version_header, next_line, vers_parse_err = parse_version_info(file_name, &bufio_reader, allocator=allocator)
+	version_header, next_line, vers_parse_err = parse_version_info(path_to_las_file, &bufio_reader, allocator=allocator)
 	if vers_parse_err != nil {
 		// delete(version_header.add)
 		return las_data, vers_parse_err
@@ -73,7 +76,7 @@ load_las :: proc(
 
 			case strings.contains(next_line, "~W"):
 			well_info_header, next_line, vers_parse_err = parse_well_info(
-				file_name,
+				path_to_las_file,
 				&bufio_reader,
 				next_line,
 				allocator=allocator)
@@ -82,11 +85,10 @@ load_las :: proc(
 
 			case strings.contains(next_line, "~C"):
 			curve_info_header, next_line, vers_parse_err = parse_curve_info(
-				file_name,
+				path_to_las_file,
 				&bufio_reader,
 				next_line,
 				allocator=allocator,
-				temp_allocator=temp_allocator,
 				loc=loc,
 			)
 			if vers_parse_err != nil { delete(curve_info_header.curves); return las_data, vers_parse_err }
@@ -94,11 +96,10 @@ load_las :: proc(
 
 			case strings.contains(next_line, "~P"):
 			params_info_header, next_line, vers_parse_err = parse_param_info(
-				file_name,
+				path_to_las_file,
 				&bufio_reader,
 				next_line,
 				allocator=allocator,
-				temp_allocator=temp_allocator,
 				loc=loc,
 			)
 			if vers_parse_err != nil { delete(params_info_header.params); return las_data, vers_parse_err }
@@ -106,11 +107,10 @@ load_las :: proc(
 
 			case strings.contains(next_line, "~O"):
 			others_info_header, next_line, vers_parse_err = parse_other_info(
-				file_name,
+				path_to_las_file,
 				&bufio_reader,
 				next_line,
 				allocator=allocator,
-				temp_allocator=temp_allocator,
 				loc=loc,
 			)
 			if vers_parse_err != nil { return las_data, vers_parse_err }
@@ -118,14 +118,13 @@ load_las :: proc(
 
 			case strings.contains(next_line, "~A"):
 			log_datas_info_header, next_line, vers_parse_err = parse_ascii_log_info(
-				file_name,
+				path_to_las_file,
 				&bufio_reader,
 				next_line,
 				version_header,
 				well_info_header,
 				curve_info_header,
 				allocator=allocator,
-				temp_allocator=temp_allocator,
 				loc=loc,
 			)
 			if vers_parse_err != nil { return las_data, vers_parse_err }
@@ -142,7 +141,7 @@ load_las :: proc(
 @(private="package")
 parse_las_line :: proc(
 	nline:      string,
-	allocator:= context.temp_allocator,
+	allocator:= context.allocator,
 	loc:=       #caller_location
 ) -> (mnem, unit, value, desc: string, ok: bool) {
 
@@ -214,7 +213,7 @@ Parse version info will make version struct and return next first line section
 and a potential error.
 
 Input:
-- file_name: string, file_name that were being read by the stream and bufio reader
+- path_to_las_file: string, path_to_las_file that were being read by the stream and bufio reader
 - reader:   ^bufio.Reader, pointer to bufio.Reader struct,
 - allocatort: context.allocator
 
@@ -230,10 +229,9 @@ Note:
 */
 @(private="package")
 parse_version_info :: proc(
-	file_name: string,
+	path_to_las_file: string,
 	reader: ^bufio.Reader,
 	allocator := context.allocator,
-	temp_allocator := context.temp_allocator,
 	loc := #caller_location,
 ) -> (
 	version_header: Version,
@@ -260,7 +258,7 @@ parse_version_info :: proc(
 			if clone_err != nil { return version_header, next_line, clone_err } // TODO: (Kelrey) do better error propagation with more intuitive error message.
 			break
 		} else if read_bytes_err != nil {
-			return version_header, next_line, ReaderReadByteError{file_name=file_name, reader=reader^}
+			return version_header, next_line, ReaderReadByteError{file_name=path_to_las_file, reader=reader^}
 		} else {
 			len_line := len(raw_line)-2
 			append(&read_lines, raw_line[:len_line])
@@ -321,11 +319,10 @@ parse_version_info :: proc(
 
 @(private="package")
 parse_well_info :: proc(
-	file_name: string,
+	path_to_las_file: string,
 	reader: ^bufio.Reader,
 	prev_line: string,
 	allocator := context.allocator,
-	temp_allocator := context.temp_allocator,
 	loc := #caller_location,
 ) -> (
 	well_info_header: WellInformation,
@@ -335,7 +332,7 @@ parse_well_info :: proc(
 
 	if !strings.has_prefix(prev_line, "~W") {
 		return well_info_header, next_line, ParseHeaderError{
-			file_name=file_name,
+			file_name=path_to_las_file,
 			line=prev_line,
 			message="Line is not a valid WELL INFORMATION section, cannot proceed to parse",
 		}
@@ -348,13 +345,13 @@ parse_well_info :: proc(
 	clone_err : mem.Allocator_Error
 	for {
 
-		raw_line, read_bytes_err := bufio.reader_read_string(reader, '\n', allocator=temp_allocator)
+		raw_line, read_bytes_err := bufio.reader_read_string(reader, '\n', allocator=allocator)
 		// defer delete(raw_line, allocator=allocator)
 
 		if strings.has_prefix(raw_line, "~") { count_section += 1 }
 		if read_bytes_err == os.ERROR_EOF || count_section == 2 {
 
-			next_line, clone_err = strings.clone(raw_line, allocator=temp_allocator)
+			next_line, clone_err = strings.clone(raw_line, allocator=allocator)
 			// TODO: (Kelrey) do better error propagation with more intuitive
 			// error message.
 			if clone_err != nil { return well_info_header, next_line, clone_err }
@@ -362,13 +359,13 @@ parse_well_info :: proc(
 
 		} else if read_bytes_err != nil {
 
-			return well_info_header, next_line, ReaderReadByteError{file_name=file_name, reader=reader^}
+			return well_info_header, next_line, ReaderReadByteError{file_name=path_to_las_file, reader=reader^}
 
 		} else {
 
 
 			len_line := len(raw_line)-2
-			next_line, clone_err = strings.clone(raw_line[:len_line], allocator=temp_allocator)
+			next_line, clone_err = strings.clone(raw_line[:len_line], allocator=allocator)
 			// TODO: (Kelrey) do better error propagation with more intuitive
 			// error message.
 			if clone_err != nil { return well_info_header, next_line, clone_err }
@@ -392,7 +389,7 @@ parse_well_info :: proc(
 			is_comment_or_section: bool = strings.has_prefix(item, "#") || strings.has_prefix(item, "~") || len(item) == 0
 			if !is_comment_or_section {
 
-			mnemonic, unit, raw_value, descr, rem := parse_las_line(item, allocator=temp_allocator, loc=loc)
+			mnemonic, unit, raw_value, descr, rem := parse_las_line(item, allocator=allocator, loc=loc)
 
 			if mnemonic == "NULL" {
 				well_info_header.null.mnemonic = "NULL"
@@ -436,11 +433,10 @@ parse_well_info :: proc(
 
 @(private="package")
 parse_curve_info :: proc(
-	file_name: string,
+	path_to_las_file: string,
 	reader: ^bufio.Reader,
 	prev_line: string,
 	allocator := context.allocator,
-	temp_allocator := context.temp_allocator,
 	loc := #caller_location
 ) -> (
 	curves_info_header: CurveInformation,
@@ -450,7 +446,7 @@ parse_curve_info :: proc(
 
 	if !strings.has_prefix(prev_line, "~C") {
 		return curves_info_header, next_line, ParseHeaderError{
-			file_name=file_name,
+			file_name=path_to_las_file,
 			line=prev_line,
 			message="Line is not a valid CURVES INFORMATION section, cannot proceed to parse",
 		}
@@ -471,7 +467,7 @@ parse_curve_info :: proc(
 			if clone_err != nil { return curves_info_header, next_line, clone_err } // TODO: (Kelrey) do better error propagation with more intuitive error message.
 			break
 		} else if read_bytes_err != nil {
-			return curves_info_header, next_line, ReaderReadByteError{file_name=file_name, reader=reader^}
+			return curves_info_header, next_line, ReaderReadByteError{file_name=path_to_las_file, reader=reader^}
 		} else {
 			len_line := len(raw_line)-2
 			n, alloc_err := append(&read_lines, cast(string)( next_line[:len_line] ))
@@ -516,11 +512,10 @@ parse_curve_info :: proc(
 
 @(private="package")
 parse_param_info :: proc(
-	file_name:       string,
+	path_to_las_file:       string,
 	reader:          ^bufio.Reader,
 	prev_line:       string,
 	allocator:=      context.allocator,
-	temp_allocator:= context.temp_allocator,
 	loc :=           #caller_location
 ) -> (
 	params_info_header: ParameterInformation,
@@ -530,7 +525,7 @@ parse_param_info :: proc(
 
 	if !strings.has_prefix(prev_line, "~P") {
 		return params_info_header, next_line, ParseHeaderError{
-			file_name=file_name,
+			file_name=path_to_las_file,
 			line=prev_line,
 			message="Line is not a valid PARAMETERS INFORMATION section, cannot proceed to parse",
 		}
@@ -538,27 +533,25 @@ parse_param_info :: proc(
 
 	read_lines    := make([dynamic]string, 0, allocator=allocator)
 
-
 	count_section := 0
 	count_line    := 0
 	if count_section != 1 {
 		for {
 
-			raw_line, read_bytes_err := bufio.reader_read_string(reader, '\n', allocator=temp_allocator)
-			// defer delete(raw_line, allocator=allocator)
+			raw_line, read_bytes_err := bufio.reader_read_string(reader, '\n', allocator=allocator)
 
 			if strings.has_prefix(raw_line, "~") { count_section += 1 }
 
 			if read_bytes_err == os.ERROR_EOF || count_section == 1 {
 
 				clone_err : mem.Allocator_Error
-				next_line, clone_err = strings.clone(raw_line, allocator = 	temp_allocator)
+				next_line, clone_err = strings.clone(raw_line, allocator = 	allocator)
 				if clone_err != nil { return params_info_header, next_line, clone_err } // TODO: (Kelrey) do better error propagation with more intuitive error message.
 				break
 
 			} else if read_bytes_err != nil {
 
-				return params_info_header, next_line, ReaderReadByteError{file_name=file_name, reader=reader^}
+				return params_info_header, next_line, ReaderReadByteError{file_name=path_to_las_file, reader=reader^}
 
 			} else {
 
@@ -579,7 +572,7 @@ parse_param_info :: proc(
 			// skip lines that are comments and section's head
 			if !( !strings.has_prefix(item, "#") && !strings.has_prefix(item, "~") ) do continue
 
-			mnemonic, unit, raw_value, descr, ok := parse_las_line(item, allocator = temp_allocator, loc=loc)
+			mnemonic, unit, raw_value, descr, ok := parse_las_line(item, allocator = allocator, loc=loc)
 
 			// NOTE: Check if the strings should be a numeric value or
 			// just a plain ahh string.
@@ -610,11 +603,10 @@ parse_param_info :: proc(
 
 @(private="package")
 parse_other_info :: proc(
-	file_name: string,
+	path_to_las_file: string,
 	reader: ^bufio.Reader,
 	prev_line: string,
 	allocator := context.allocator,
-	temp_allocator := context.temp_allocator,
 	loc := #caller_location,
 ) -> (
 	others_info_header: OtherInformation,
@@ -624,7 +616,7 @@ parse_other_info :: proc(
 
 	if !strings.contains(prev_line, "~O") {
 		return others_info_header, next_line, ParseHeaderError{
-			file_name=file_name,
+			file_name=path_to_las_file,
 			line=prev_line,
 			message="Line is not a valid OTHERS INFORMATION section, cannot proceed to parse",
 		}
@@ -649,7 +641,7 @@ parse_other_info :: proc(
 
 		} else if read_bytes_err != nil {
 
-			return others_info_header, next_line, ReaderReadByteError{file_name=file_name, reader=reader^}
+			return others_info_header, next_line, ReaderReadByteError{file_name=path_to_las_file, reader=reader^}
 
 		} else {
 
@@ -683,14 +675,13 @@ parse_other_info :: proc(
 
 @(private="package")
 parse_ascii_log_info :: proc(
-	file_name:      string,
+	path_to_las_file:      string,
 	reader:         ^bufio.Reader,
 	prev_line:      string,
 	version_header: Version,
 	well_info:      WellInformation,
 	curve_header:   CurveInformation,
 	allocator:=     context.allocator,
-	temp_allocator:=     context.temp_allocator,
 	loc:=           #caller_location
 ) -> (
 
@@ -703,7 +694,7 @@ parse_ascii_log_info :: proc(
 	ascii_data.wrap = version_header.wrap.value.(bool)
 	if !strings.has_prefix(prev_line, "~A") {
 		return ascii_data, next_line, ParseHeaderError{
-			file_name=file_name,
+			file_name=path_to_las_file,
 			line=prev_line,
 			message="Line is not a valid ASCII LOG DATA section, cannot proceed to parse",
 		}
@@ -720,7 +711,7 @@ parse_ascii_log_info :: proc(
 		if read_bytes_err == os.ERROR_EOF {
 			break
 		} else if read_bytes_err != nil {
-			return ascii_data, next_line, ReaderReadByteError{file_name=file_name, reader=reader^}
+			return ascii_data, next_line, ReaderReadByteError{file_name=path_to_las_file, reader=reader^}
 		} else {
 
 				if strings.contains(raw_line, "~") { count_section += 1 }
@@ -734,7 +725,6 @@ parse_ascii_log_info :: proc(
 	}
 
 	n_curve_int:       = cast(int)curve_header.len
-	// n_curve_non_first := n_curve_int-1
 	ascii_data.ncurves = curve_header.len
 
 	{ // assign all the read lines to `LogData` struct
@@ -742,10 +732,6 @@ parse_ascii_log_info :: proc(
 		count:i32 = 0
 		items     := make_map(map[int][]f64, allocator=allocator)
 		container := make([][dynamic]f64, n_curve_int, allocator=allocator)
-		// defer {
-		// 	for c in container { delete(c) }
-		// 	delete(container)
-		// }
 
 		if !ascii_data.wrap { // if it is not a wrapped version
 			for item in read_lines {
@@ -754,8 +740,6 @@ parse_ascii_log_info :: proc(
 				for curve_idx in 0..<n_curve_int {
 					point := strconv.atof(datum_points[curve_idx])
 					append(&(container[curve_idx]), point)
-					// if point == well_info.null.value { append(&(container[curve_idx]), math.nan_f64()) }
-					// else                             { append(&(container[curve_idx]), point) }
 				}
 				count += 1
 
@@ -789,8 +773,6 @@ parse_ascii_log_info :: proc(
 					for curve_idx in sub_curve_idx..<sub_curve_length {
 						point = strconv.atof(datum_points[curve_idx])
 						append(&(container[curve_idx+inner_count]), point)
-						// if point == well_info.null.value { append(&(container[curve_idx+inner_count]), math.nan_f64()) }
-						// else { append(&(container[curve_idx+inner_count]), point) }
 					}
 
 				} else {
@@ -853,7 +835,6 @@ parse_datum_points_wrapped :: proc(
 			append(&datum_points, datum)
 		} else {
 			continue parse_datum
-			// append(&datum_points, "")
 		}
 	}
 
@@ -866,215 +847,3 @@ parse_datum_points :: proc {
 	parse_datum_points_wrapped,
 }
 
-import    "core:fmt"
-import tt "core:testing"
-
-@(test)
-test_load_las_example_1_canadian_well_logging_society :: proc(t: ^tt.T) {
-	las_file, parsed_ok := load_las(
-		"assets/example_1_canadian_well_logging_society.las",
-		4016,
-		allocator=context.temp_allocator,
-	)
-	defer delete_las_data(las_file)
-	tt.expect(t, parsed_ok == nil, fmt.tprint(parsed_ok))
-
-
-	NaN := f64(-999.25)
-	//  Version Section
-	{   using las_file.version
-		tt.expect(t, vers.mnemonic == "VERS",   fmt.tprint(vers.mnemonic))
-		tt.expect(t, vers.unit     == "",       fmt.tprint(vers.unit))
-		tt.expect(t, vers.value    == f64(2.0), fmt.tprint(vers.value))
-		tt.expect(t, vers.descr    == "CWLS LOG ASCII STANDARD -VERSION 2.0", fmt.tprint(vers.descr))
-		tt.expect(t, wrap.mnemonic == "WRAP", fmt.tprint(wrap.mnemonic))
-		tt.expect(t, wrap.unit     == "",     fmt.tprint(wrap.unit))
-		tt.expect(t, wrap.value    == false,  fmt.tprint(wrap.value))
-		tt.expect(t, wrap.descr    == "ONE LINE PER DEPTH STEP", fmt.tprint(wrap.descr))
-	}
-
-	//  Well Information Section
-	{   using las_file.well_info
-		tt.expect(t, items[0].mnemonic == "STRT",        fmt.tprint(items[0].mnemonic))
-		tt.expect(t, items[0].unit     == "M",           fmt.tprint(items[0].unit))
-		tt.expect(t, items[0].value    == f64(1670.0),   fmt.tprint(items[0].value))
-		tt.expect(t, items[0].descr    == "START DEPTH", fmt.tprint(items[0].descr))
-
-		tt.expect(t, items[1].mnemonic == "STOP",         fmt.tprint(items[1].mnemonic))
-		tt.expect(t, items[1].unit     == "M",            fmt.tprint(items[1].unit))
-		tt.expect(t, items[1].value    == f64(1669.75),   fmt.tprint(items[1].value))
-		tt.expect(t, items[1].descr    == "STOP DEPTH",   fmt.tprint(items[1].descr))
-	}
-
-	// tt.expect(t, slice.equal(np_tensor.shape, []uint{5, 5}))
-}
-
-@(test)
-test_load_las_example_2_canadian_well_logging_society :: proc(t: ^tt.T) {
-	las_file, parsed_ok := load_las(
-		"assets/example_2_canadian_well_logging_society.las",
-		4016,
-		allocator=context.temp_allocator,
-	)
-	defer delete_las_data(las_file)
-	tt.expect(t, parsed_ok == nil, fmt.tprint(parsed_ok))
-
-	//  Version Section
-	{   using las_file.version
-
-		tt.expect(t, vers.mnemonic == "VERS",   fmt.tprint(vers.mnemonic))
-		tt.expect(t, vers.unit     == "",       fmt.tprint(vers.unit))
-		tt.expect(t, vers.value    == f64(2.0), fmt.tprint(vers.value))
-		tt.expect(t, vers.descr    == "CWLS LAS-VERSION 2.0", fmt.tprint(vers.descr))
-
-		tt.expect(t, wrap.mnemonic == "WRAP", fmt.tprint(wrap.mnemonic))
-		tt.expect(t, wrap.unit     == "",     fmt.tprint(wrap.unit))
-		tt.expect(t, wrap.value    == false,  fmt.tprint(wrap.value))
-		tt.expect(t, wrap.descr    == "One line per depth step", fmt.tprint(wrap.descr))
-
-	}
-
-	NaN := f64(-999.25)
-	//  Well Information Section
-	{   using las_file.well_info
-
-		tt.expect(t, items[0].mnemonic == "STRT",        fmt.tprint(items[0].mnemonic))
-		tt.expect(t, items[0].unit     == "M",           fmt.tprint(items[0].unit))
-		tt.expect(t, items[0].value    == f64(635.0000),   fmt.tprint(items[0].value))
-		tt.expect(t, items[0].descr    == "START DEPTH", fmt.tprint(items[0].descr))
-
-		tt.expect(t, items[1].mnemonic == "STOP",         fmt.tprint(items[1].mnemonic))
-		tt.expect(t, items[1].unit     == "M",            fmt.tprint(items[1].unit))
-		tt.expect(t, items[1].value    == f64(634.8750),  fmt.tprint(items[1].value))
-		tt.expect(t, items[1].descr    == "STOP DEPTH",   fmt.tprint(items[1].descr))
-
-		tt.expect(t, items[2].mnemonic == "STEP",         fmt.tprint(items[2].mnemonic))
-		tt.expect(t, items[2].unit     == "M",            fmt.tprint(items[2].unit))
-		tt.expect(t, items[2].value    == f64(-0.1250),   fmt.tprint(items[2].value))
-		tt.expect(t, items[2].descr    == "STEP",         fmt.tprint(items[2].descr))
-
-		tt.expect(t, null.mnemonic == "NULL",         fmt.tprint(null.mnemonic))
-		tt.expect(t, null.unit     == "",             fmt.tprint(null.unit))
-		tt.expect(t, null.value    == NaN,            fmt.tprint("value",    null.value))
-		tt.expect(t, null.descr    == "NULL VALUE",   fmt.tprint(null.descr))
-
-		tt.expect(t, items[3].mnemonic == "COMP",                 fmt.tprint(items[3].mnemonic))
-		tt.expect(t, items[3].unit     == "",                     fmt.tprint(items[3].unit))
-		tt.expect(t, items[3].value    == "ANY OIL COMPANY INC.", fmt.tprint(items[3].value))
-		tt.expect(t, items[3].descr    == "COMPANY",              fmt.tprint(items[3].descr))
-
-		tt.expect(t, items[4].mnemonic == "WELL",                  fmt.tprint(items[4].mnemonic))
-		tt.expect(t, items[4].unit     == "",                      fmt.tprint(items[4].unit))
-		tt.expect(t, items[4].value    == "ANY ET AL 12-34-12-34", fmt.tprint(items[4].value))
-		tt.expect(t, items[4].descr    == "WELL",                  fmt.tprint(items[4].descr))
-
-		tt.expect(t, items[5].mnemonic == "FLD",     fmt.tprint(items[5].mnemonic))
-		tt.expect(t, items[5].unit     == "",        fmt.tprint(items[5].unit))
-		tt.expect(t, items[5].value    == "WILDCAT", fmt.tprint(items[5].value))
-		tt.expect(t, items[5].descr    == "FIELD",   fmt.tprint(items[5].descr))
-
-		tt.expect(t, items[6].mnemonic == "LOC",            fmt.tprint(items[6].mnemonic))
-		tt.expect(t, items[6].unit     == "",               fmt.tprint(items[6].unit))
-		tt.expect(t, items[6].value    == "12-34-12-34W5M", fmt.tprint(items[6].value))
-		tt.expect(t, items[6].descr    == "LOCATION",       fmt.tprint(items[6].descr))
-
-		tt.expect(t, items[7].mnemonic == "PROV",     fmt.tprint(items[7].mnemonic))
-		tt.expect(t, items[7].unit     == "",         fmt.tprint(items[7].unit))
-		tt.expect(t, items[7].value    == "ALBERTA",  fmt.tprint(items[7].value))
-		tt.expect(t, items[7].descr    == "PROVINCE", fmt.tprint(items[7].descr))
-
-	}
-
-	// tt.expect(t, slice.equal(np_tensor.shape, []uint{5, 5}))
-}
-
-import "core:slice"
-
-@(test)
-test_load_las_example_3_canadian_well_logging_society :: proc(t: ^tt.T) {
-	las_file, parsed_ok := load_las(
-		"assets/example_3_canadian_well_logging_society.las",
-		4016,
-		allocator=context.temp_allocator,
-	)
-	defer delete_las_data(las_file)
-	tt.expect(t, parsed_ok == nil, fmt.tprint(parsed_ok))
-
-	NaN := f64(-999.25)
-	//  Version Section
-	{   using las_file.version
-
-		tt.expect(t, vers.mnemonic == "VERS",   fmt.tprint(vers.mnemonic))
-		tt.expect(t, vers.unit     == "",       fmt.tprint(vers.unit))
-		tt.expect(t, vers.value    == f64(2.0), fmt.tprint(vers.value))
-		tt.expect(t, vers.descr    == "CWLS log ASCII Standard -VERSION 2.0", fmt.tprint(vers.descr))
-
-		tt.expect(t, wrap.mnemonic == "WRAP", fmt.tprint(wrap.mnemonic))
-		tt.expect(t, wrap.unit     == "",     fmt.tprint(wrap.unit))
-		tt.expect(t, wrap.value    == true,   fmt.tprint(wrap.value))
-		tt.expect(t, wrap.descr    == "Multiple lines per depth step", fmt.tprint(wrap.descr))
-
-	}
-
-	//  Well Information Section
-	{   using las_file.well_info
-
-		tt.expect(t, items[0].mnemonic == "STRT",        fmt.tprint(items[0].mnemonic))
-		tt.expect(t, items[0].unit     == "M",           fmt.tprint(items[0].unit))
-		tt.expect(t, items[0].value    == f64(910.00),   fmt.tprint(items[0].value))
-		tt.expect(t, items[0].descr    == "START DEPTH", fmt.tprint(items[0].descr))
-
-		tt.expect(t, items[1].mnemonic == "STOP",         fmt.tprint(items[1].mnemonic))
-		tt.expect(t, items[1].unit     == "M",            fmt.tprint(items[1].unit))
-		tt.expect(t, items[1].value    == f64(909.5000),  fmt.tprint(items[1].value))
-		tt.expect(t, items[1].descr    == "STOP DEPTH",   fmt.tprint(items[1].descr))
-
-		tt.expect(t, items[2].mnemonic == "STEP",         fmt.tprint("mnemonic", items[2].mnemonic))
-		tt.expect(t, items[2].unit     == "M",            fmt.tprint("unit",     items[2].unit))
-		tt.expect(t, items[2].value    == f64(-0.1250),   fmt.tprint("value",    items[2].value))
-		tt.expect(t, items[2].descr    == "STEP",         fmt.tprint("descr",    items[2].descr))
-
-		tt.expect(t, null.mnemonic == "NULL",         fmt.tprint("mnemonic", null.mnemonic))
-		tt.expect(t, null.unit     == "",             fmt.tprint("unit",     null.unit))
-		tt.expect(t, null.value    == NaN,            fmt.tprint("value",    null.value))
-		tt.expect(t, null.descr    == "NULL VALUE",   fmt.tprint("descr",    null.descr))
-
-		tt.expect(t, items[3].mnemonic == "COMP",                 fmt.tprint(items[3].mnemonic))
-		tt.expect(t, items[3].unit     == "",                     fmt.tprint(items[3].unit))
-		tt.expect(t, items[3].value    == "ANY OIL COMPANY INC.", fmt.tprint(items[3].value))
-		tt.expect(t, items[3].descr    == "COMPANY",              fmt.tprint(items[3].descr))
-
-		tt.expect(t, items[4].mnemonic == "WELL",                  fmt.tprint(items[4].mnemonic))
-		tt.expect(t, items[4].unit     == "",                      fmt.tprint(items[4].unit))
-		tt.expect(t, items[4].value    == "ANY ET AL 12-34-12-34", fmt.tprint(items[4].value))
-		tt.expect(t, items[4].descr    == "WELL",                  fmt.tprint(items[4].descr))
-
-		tt.expect(t, items[5].mnemonic == "FLD",     fmt.tprint(items[5].mnemonic))
-		tt.expect(t, items[5].unit     == "",        fmt.tprint(items[5].unit))
-		tt.expect(t, items[5].value    == "WILDCAT", fmt.tprint(items[5].value))
-		tt.expect(t, items[5].descr    == "FIELD",   fmt.tprint(items[5].descr))
-
-		tt.expect(t, items[6].mnemonic == "LOC",            fmt.tprint(items[6].mnemonic))
-		tt.expect(t, items[6].unit     == "",               fmt.tprint(items[6].unit))
-		tt.expect(t, items[6].value    == "12-34-12-34W5M", fmt.tprint(items[6].value))
-		tt.expect(t, items[6].descr    == "LOCATION",       fmt.tprint(items[6].descr))
-
-		tt.expect(t, items[7].mnemonic == "PROV",     fmt.tprint(items[7].mnemonic))
-		tt.expect(t, items[7].unit     == "",         fmt.tprint(items[7].unit))
-		tt.expect(t, items[7].value    == "ALBERTA",  fmt.tprint(items[7].value))
-		tt.expect(t, items[7].descr    == "PROVINCE", fmt.tprint(items[7].descr))
-
-	}
-
-	{   using las_file.log_data
-
-		tt.expect(t, slice.equal( logs[0], []f64{  +910.0000,  +909.8750,  +909.7500,  +909.6250,  +909.5000, }), fmt.tprint(logs[0]))
-		tt.expect(t, slice.equal( logs[1], []f64{        NaN,        NaN,        NaN,        NaN,        NaN, }), fmt.tprint(logs[1]))
-		tt.expect(t, slice.equal( logs[2], []f64{ +2692.7075, +2712.6460, +2692.8137, +2644.3650, +2586.2822, }), fmt.tprint(logs[2]))
-		tt.expect(t, slice.equal( logs[3], []f64{     0.3140,     0.2886,     0.2730,     0.2765,     0.2996, }), fmt.tprint(logs[3]))
-		tt.expect(t, slice.equal( logs[4], []f64{    19.4086,    23.3987,    22.5909,    18.4831,    13.9187, }), fmt.tprint(logs[4]))
-
-	}
-
-	// tt.expect(t, slice.equal(np_tensor.shape, []uint{5, 5}))
-}

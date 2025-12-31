@@ -1,6 +1,7 @@
 package lasiodin
 
 // // i don't want to delete these regex, because it is very useful in vim.
+
 // RE_WELL_INFORMATION: string      = "^\([^.]*\)\.\([^:].?*\) \([^:]*\):\([^:*]*\)"
 // RE_PARAMETER_INFORMATION: string = "^\([^.]*\)\.\([^:].?*\) \([^:]*\):\([^:*]*\)"
 // RE_CURVE_INFORMATION: string     = "^\([^.]*\)\.\([^:].*?*\) \([^:]*\):\([^:*]*\)"

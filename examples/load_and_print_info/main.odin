@@ -14,10 +14,9 @@ main :: proc() {
 	las_file, parsed_ok := ls.load_las(
 		file_name,
 		4016,
-		allocator=context.allocator,
-		temp_allocator=context.temp_allocator,
+		allocator=context.temp_allocator,
 	)
-	defer ls.delete_las_data(las_file)
+	defer ls.delete_las_data(&las_file)
 
 	if parsed_ok != nil { fmt.printfln("Failed to parse the data, err: %v", parsed_ok) }
 

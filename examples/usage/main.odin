@@ -7,10 +7,9 @@ main :: proc()
 {
     las_file, parsed_ok := ls.load_las(
         "./assets/example_1_canadian_well_logging_society.las",
-        4016,
         allocator=context.temp_allocator,
     )
-    defer ls.delete_las_data(las_file)
+    defer ls.delete_las_data(&las_file)
 	if parsed_ok != nil { fmt.printfln("Failed to parse the data, err: %v", parsed_ok) }
 
     log_data := &las_file.log_data
