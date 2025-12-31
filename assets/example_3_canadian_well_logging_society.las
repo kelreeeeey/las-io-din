@@ -7,7 +7,7 @@
  STRT   .M              910.0000            :START DEPTH
  STOP   .M              909.5000            :STOP DEPTH
  STEP   .M              -0.1250             :STEP
- NULL                   -999.25             :NULL VALUE
+ NULL   .               -999.25             :NULL VALUE
  COMP   .      ANY OIL COMPANY INC.         :COMPANY
  WELL   .      ANY ET AL 12-34-12-34        :WELL
  FLD    .      WILDCAT                      :FIELD

@@ -5,7 +5,7 @@ LAS file IO toolkit for petrophysical data written in Odin
 # Features, or overview (I guess)
 
 - [x] Parse LAS Format 2.0 with wrap flag = false
-- [ ] Parse LAS Format 2.0 with wrap flag = true
+- [x] Parse LAS Format 2.0 with wrap flag = true
 - [ ] Parse LAS Format 3.0 (I'll save it for the future)
 
 - `lasiodin.load_las` returns
