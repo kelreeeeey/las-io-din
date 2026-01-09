@@ -248,6 +248,27 @@ test_load_las_example_1_canadian_well_logging_society_broken :: proc(t: ^tt.T) {
 		tt.expect(t, items[1].unit     == "M",            fmt.tprint(items[1].unit))
 		tt.expect(t, items[1].value    == f64(1669.75),   fmt.tprint(items[1].value))
 		tt.expect(t, items[1].descr    == "STOP DEPTH",   fmt.tprint(items[1].descr))
+
+		tt.expect(t, items[2].mnemonic == "STEP",         fmt.tprint(items[2].mnemonic))
+		tt.expect(t, items[2].unit     == "M",            fmt.tprint(items[2].unit))
+		tt.expect(t, items[2].value    == f64(-0.1250),   fmt.tprint(items[2].value))
+		tt.expect(t, items[2].descr    == "STEP",         fmt.tprint(items[2].descr))
+
+		tt.expect(t, items[3].mnemonic == "COMP",         fmt.tprint(items[3].mnemonic))
+		tt.expect(t, items[3].unit     == "",                      fmt.tprint(items[3].unit))
+		tt.expect(t, items[3].value    == "ANY OIL COMPANY INC.", fmt.tprint(items[3].value))
+		tt.expect(t, items[3].descr    == "COMPANY",         fmt.tprint(items[3].descr))
+
+		tt.expect(t, items[4].mnemonic == "WELL",         fmt.tprint(items[4].mnemonic))
+		tt.expect(t, items[4].unit     == "",                      fmt.tprint(items[4].unit))
+		tt.expect(t, items[4].value    == "ANY ET AL 12-34-12-34", fmt.tprint(items[4].value))
+		tt.expect(t, items[4].descr    == "WELL",         fmt.tprint(items[4].descr))
+
+		tt.expect(t, items[5].mnemonic == "FLD",         fmt.tprint(items[5].mnemonic))
+		tt.expect(t, items[5].unit     == "",                      fmt.tprint(items[5].unit))
+		tt.expect(t, items[5].value    == "WILDCAT", fmt.tprint(items[5].value))
+		tt.expect(t, items[5].descr    == "FIELD",         fmt.tprint(items[5].descr))
+
 	}
 
 	{   using las_file.curve_info
