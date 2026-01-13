@@ -285,7 +285,7 @@ parse_version_info :: proc(
 
 				switch {
 				case strings.contains(mnemonic, "VERS"):
-				new_value:= strconv.atof(value)
+				new_value, _ := strconv.parse_f64(value)
 				version_header.vers.mnemonic = mnemonic
 				version_header.vers.value = new_value
 				version_header.vers.descr = descr
@@ -393,12 +393,13 @@ parse_well_info :: proc(
 
 			if mnemonic == "NULL" {
 				well_info_header.null.mnemonic = "NULL"
-				well_info_header.null.value = strconv.atof(raw_value)
-				well_info_header.null.unit = unit
+				_new_value, _ := strconv.parse_f64(string(raw_value))
+				well_info_header.null.value = _new_value
+				well_info_header.null.unit  = unit
 				well_info_header.null.descr = descr
 			} else {
 				if !strings.contains_any(raw_value, _NON_NUMERIC_CHARS) {
-					value := strconv.atof(raw_value)
+					value, _ := strconv.parse_f64(string(raw_value))
 					well_info_header.items[count]    = HeaderItem{
 						value    = value,
 						mnemonic = mnemonic,
@@ -542,7 +543,7 @@ parse_param_info :: proc(
 
 			if strings.has_prefix(raw_line, "~") { count_section += 1 }
 
-			if read_bytes_err == os.ERROR_EOF || count_section == 1 {
+	if read_bytes_err == os.ERROR_EOF || count_section == 1 {
 
 				clone_err : mem.Allocator_Error
 				next_line, clone_err = strings.clone(raw_line, allocator = 	allocator)
@@ -578,7 +579,8 @@ parse_param_info :: proc(
 			// just a plain ahh string.
 			value: ItemValues
 			if strings.contains_any(raw_value, "-0123456789") {
-				value = strconv.atof(raw_value)
+				_value, _ := strconv.parse_f64(string(raw_value))
+				value = f64(_value)
 			} else {
 				value = raw_value
 			}
@@ -738,7 +740,7 @@ parse_ascii_log_info :: proc(
 				if strings.has_prefix(item, "#") do continue
 				datum_points := parse_datum_points(item, allocator=allocator, loc=loc)
 				for curve_idx in 0..<n_curve_int {
-					point := strconv.atof(datum_points[curve_idx])
+					point, _ := strconv.parse_f64(datum_points[curve_idx])
 					append(&(container[curve_idx]), point)
 				}
 				count += 1
@@ -747,8 +749,8 @@ parse_ascii_log_info :: proc(
 
 		} else { // it is a wrapped version
 
-			point:      f64
-			is_first:   bool
+			point:        f64
+			is_first, ok: bool
 
 			inner_count: = 1
 
@@ -761,7 +763,7 @@ parse_ascii_log_info :: proc(
 				if sub_curve_length == 1 {
 
 					is_first    = true
-					point = strconv.atof(datum_points[0])
+					point, ok = strconv.parse_f64(datum_points[0])
 					append(&container[0], point)
 					count += 1
 
@@ -771,7 +773,7 @@ parse_ascii_log_info :: proc(
 					sub_curve_idx    := 0
 
 					for curve_idx in sub_curve_idx..<sub_curve_length {
-						point = strconv.atof(datum_points[curve_idx])
+						point, ok = strconv.parse_f64(datum_points[curve_idx])
 						append(&(container[curve_idx+inner_count]), point)
 					}
 

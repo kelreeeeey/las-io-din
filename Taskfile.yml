@@ -33,6 +33,7 @@ tasks:
   build_usage:
     cmds:
       - odin build ./examples/usage -out:./bin/usage.exe -o:speed
+
     silent: false
     method: none
     aliases:
@@ -40,7 +41,10 @@ tasks:
     generates:
       - ./bin/usage.exe
     sources:
-      - ./examples/usage/
+      - ./lasiodin/**/*.odin
+      - ./lasiodin/*.odin
+      - ./examples/usage/main.odin
+
 
   usage:
     cmds:
@@ -49,4 +53,39 @@ tasks:
     method: none
     aliases:
       - ur
+    sources:
+      - ./lasiodin/**/*.odin
+      - ./lasiodin/*.odin
+      - ./examples/usage/main.odin
+
+
+  build_las_to_csv:
+    cmds:
+      - odin build ./examples/las_to_csv -out:./bin/las_to_csv.exe -o:speed
+    silent: true
+    method: none
+    aliases:
+      - l2cb
+    generates:
+      - ./bin/las_to_csv.exe
+    sources:
+      - ./lasiodin/**/*.odin
+      - ./lasiodin/*.odin
+      - ./examples/las_to_csv/main.odin
+
+  las_to_csv:
+    deps: [build_las_to_csv]
+    cmds:
+      - rm ./assets/example_1_canadian_well_logging_society.csv
+      - ./bin/las_to_csv.exe ./assets/example_1_canadian_well_logging_society.las ./assets/example_1_canadian_well_logging_society.csv
+      - cat ./assets/example_1_canadian_well_logging_society.csv
+    watch: true
+    silent: true
+    method: none
+    aliases:
+      - l2cr
+    sources:
+      - ./lasiodin/**/*.odin
+      - ./lasiodin/*.odin
+      - ./examples/las_to_csv/main.odin
 
