@@ -7,6 +7,8 @@ LAS file IO toolkit for petrophysical data written in Odin
 - [x] Parse LAS Format 2.0 with wrap flag = false
 - [x] Parse LAS Format 2.0 with wrap flag = true
 - [ ] Parse LAS Format 3.0 (I'll save it for the future)
+- [x] Convert LAS to CSV
+- [x] Convert LAS to JSON
 
 - `lasiodin.load_las` returns
     1. one big struct, `LasData` (see [las_item.odin](./lasiodin/las_item.odin)), and
@@ -19,9 +21,11 @@ Underlying data structure that I used here are very straight forward as the LAS 
 Curve information struct shares the exact same keys as the log data map indicating that curve information also has a field, named `curves` which is map of int to `HeaderItem`s, hence, we can access both of each log data and their corresponding curve information using array indexing. This design api might change overtime, considering the current memory layout of log data is not as optimized and flexible as if it were flat array in which one can modify its strides and access pattern down to each log sample. Though, current implementation can be easily applied to LAS 3.0 where the log data can holds non numerical data sample, hence converting it to flat array would be quite tricky and tedious to handle.
 
 
-# Usage
+# Usages
 
 Other examples can be found in [examples/](./examples/)
+
+## Load LAS data in Odin
 
 ```odin
 package usage
@@ -338,3 +342,81 @@ LasData{
 }
 ```
 </details>
+
+## Convert LAS Data
+
+There will be 2 targets of conversion I have planned to implement
+
+1. LAS to CSV (done, need test)
+2. LAS to JSON (not done)
+
+The interface for both cases will be as follow:
+```odin
+// in lasiodin/converters/converters.odin
+convert_las :: proc(
+	out_path: string,
+	config: Converter_Configuration,
+	las_data: ^ls.LasData,
+	flag: Converter_Target_Flags,
+	allocator := context.allocator,
+	loc := #caller_location,
+) -> ( ok: Convert_Error,)
+```
+inputs:
+
+- out_path: `string`, output path to the string
+- config: `Converter_Configuration`, configuration for conversion, user need to specify the necesary configuration based on the target, e.g. delimiter and line separator if conversion target to CSV.
+- las_data: `^lasiodin.LasData`, pointer to `LasData` struct
+- flag: `Converter_Target_Flags`, either `.CSV` or `.JSON
+`
+output:
+
+- it would be `nil` if success, otherwise, Error union tag of `Convert_Error`
+
+
+### Convert To CSV
+```odin
+
+package usage
+
+// ./examples/las_to_csv
+
+import "core:os"
+import "core:fmt"
+import ls "../../lasiodin"
+import conv "../../lasiodin/converters"
+
+main :: proc() {
+	if !(len(os.args) >= 3) {
+		fmt.printf("Require 2 file input!")
+		fmt.printf("\t input 1: path to las file")
+		fmt.printf("\t input 2: output path")
+		fmt.print("\n")
+		return
+	}
+
+	file_name: string = os.args[1]
+	las_file, parsed_ok := ls.load_las(file_name, allocator = context.allocator)
+	defer ls.delete_las_data(&las_file, allocator = context.allocator)
+	if parsed_ok != nil {fmt.printfln("Failed to parse the data, err: %v", parsed_ok)}
+
+	out_name: string = os.args[2]
+	ok_conv := conv.convert_las(
+		out_name,
+		{delimiter = string(","), line_separator = string("\n")},
+		&las_file,
+		.CSV,
+		allocator = context.allocator,
+	)
+	if ok_conv != nil {fmt.printfln("Failed to convert the data to CSV, err: %v", ok_conv)}
+
+}
+
+```
+
+build and use it:
+
+```bash
+odin build ./examples/las_to_csv -out:./bin/las_to_csv.exe -o:speed
+./bin/las_to_csv.exe ./assets/example_1_canadian_well_logging_society.las ./assets/example_1_canadian_well_logging_society.csv
+```

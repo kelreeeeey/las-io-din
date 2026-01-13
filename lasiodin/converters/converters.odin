@@ -31,7 +31,6 @@ Convert_Error :: union {
 	Config_Error,
 }
 
-
 Config_Error :: struct {
 	t: Config_Error_Type,
 	m: string,
@@ -44,6 +43,13 @@ Config_Error_Type :: enum {
 }
 
 
+// convert_las
+// convert LAS data based on the flag 
+// inputs:
+// out_path: string, output path to the string
+// config: Converter_Configuration, configuration for conversion, user need to specify the necesary configuration based on the target, e.g. delimiter and line separator if conversion target to CSV.
+// las_data: ^lasiodin.LasData, pointer to LasData struct
+// flag: Converter_Target_Flags, either .CSV or .JSON
 convert_las :: proc(
 	out_path: string,
 	config: Converter_Configuration,

@@ -27,7 +27,7 @@ main :: proc() {
 		.CSV,
 		allocator = context.allocator,
 	)
-	fmt.print("\n")
+	if ok_conv != nil {fmt.printfln("Failed to convert the data to CSV, err: %v", ok_conv)}
 
 }
 
