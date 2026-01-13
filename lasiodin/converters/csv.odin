@@ -63,7 +63,6 @@ write_to_csv :: proc(
 	for row: i32 = 0; row < n_rows; row += 1 {
 
 		for idx: int = 0; idx < n_curves - 1; idx += 1 {
-			fmt.print()
 			strings.write_f64(&builder, log_data.logs[idx][row], u8('F'))
 			strings.write_string(&builder, config.delimiter)
 		}

@@ -8,7 +8,7 @@ LAS file IO toolkit for petrophysical data written in Odin
 - [x] Parse LAS Format 2.0 with wrap flag = true
 - [ ] Parse LAS Format 3.0 (I'll save it for the future)
 - [x] Convert LAS to CSV
-- [x] Convert LAS to JSON
+- [ ] Convert LAS to JSON
 
 - `lasiodin.load_las` returns
     1. one big struct, `LasData` (see [las_item.odin](./lasiodin/las_item.odin)), and
