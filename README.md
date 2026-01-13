@@ -367,8 +367,9 @@ inputs:
 - out_path: `string`, output path to the string
 - config: `Converter_Configuration`, configuration for conversion, user need to specify the necesary configuration based on the target, e.g. delimiter and line separator if conversion target to CSV.
 - las_data: `^lasiodin.LasData`, pointer to `LasData` struct
-- flag: `Converter_Target_Flags`, either `.CSV` or `.JSON
-`
+- flag: `Converter_Target_Flags`, either `.CSV` or `.JSON`
+
+
 output:
 
 - it would be `nil` if success, otherwise, Error union tag of `Convert_Error`
