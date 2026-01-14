@@ -8,7 +8,7 @@ LAS file IO toolkit for petrophysical data written in Odin
 - [x] Parse LAS Format 2.0 with wrap flag = true
 - [ ] Parse LAS Format 3.0 (I'll save it for the future)
 - [x] Convert LAS to CSV
-- [ ] Convert LAS to JSON
+- [x] Convert LAS to JSON
 
 - `lasiodin.load_las` returns
     1. one big struct, `LasData` (see [las_item.odin](./lasiodin/las_item.odin)), and
@@ -420,4 +420,61 @@ build and use it:
 ```bash
 odin build ./examples/las_to_csv -out:./bin/las_to_csv.exe -o:speed
 ./bin/las_to_csv.exe ./assets/example_1_canadian_well_logging_society.las ./assets/example_1_canadian_well_logging_society.csv
+```
+
+
+### Convert To JSON
+```odin
+
+package usage
+
+// ./examples/las_to_csv
+
+import "core:os"
+import "core:fmt"
+import "core:encoding/json"
+import ls "../../lasiodin"
+import conv "../../lasiodin/converters"
+
+main :: proc() {
+	if !(len(os.args) >= 3) {
+		fmt.eprintln("Require 2 files input!")
+		fmt.eprintln("\t input 1: path to las file")
+		fmt.eprintln("\t input 2: output path")
+		return
+	}
+
+	file_name: string = os.args[1]
+	las_file, parsed_ok := ls.load_las(file_name, allocator = context.allocator)
+	if parsed_ok != nil {fmt.eprintfln("Failed to parse the data, err: %v", parsed_ok)}
+	defer ls.delete_las_data(&las_file, allocator = context.allocator)
+
+	out_name: string = os.args[2]
+	ok_conv := conv.convert_las(
+		out_name,
+		{
+			json_marshal_options = json.Marshal_Options {
+				// Adds indentation etc
+				pretty         = true,
+				use_spaces     = true,
+				// Output enum member names instead of numeric value.
+				use_enum_names = true,
+				indentation    = 0,
+			},
+		},
+		&las_file,
+		.JSON,
+		allocator = context.allocator,
+	)
+	if ok_conv != nil {fmt.eprintfln("Failed to convert the data to JSON, err: %v", ok_conv)}
+
+}
+
+```
+
+build and use it:
+
+```bash
+odin build ./examples/las_to_json -out:./bin/las_to_json.exe -o:speed
+./bin/las_to_json.exe ./assets/example_1_canadian_well_logging_society.las ./assets/example_1_canadian_well_logging_society.json
 ```
