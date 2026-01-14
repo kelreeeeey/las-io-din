@@ -2,6 +2,7 @@ package converters
 
 import "base:runtime"
 import "core:bufio"
+import "core:encoding/json"
 import "core:fmt"
 import "core:io"
 import "core:mem"
@@ -16,11 +17,12 @@ Converter_Target_Flags :: enum {
 
 Converter_Configuration :: struct {
 	// csv config
-	delimiter:      string,
-	line_separator: string,
+	delimiter:            string,
+	line_separator:       string,
 
 	// json config
-	flatten_log:    bool,
+	flatten_log:          bool,
+	json_marshal_options: json.Marshal_Options, // see core/encoding/json/marshal.odin
 }
 
 Convert_Error :: union {
@@ -29,6 +31,7 @@ Convert_Error :: union {
 	io.Error,
 	bool, // general bool error
 	Config_Error,
+	json.Marshal_Error,
 }
 
 Config_Error :: struct {
@@ -57,6 +60,9 @@ convert_las :: proc(
 	flag: Converter_Target_Flags,
 	allocator := context.allocator,
 	loc := #caller_location,
+	// TODO(Rey): maybe add another parameter of pointer if the user want to use the 
+	// converted data by passing a rawpointer of CSV_Data or JSON_Data struct to this proc 
+	// and then be propagated by corresponing converter handle
 ) -> (
 	ok: Convert_Error,
 ) {
@@ -65,13 +71,13 @@ convert_las :: proc(
 	stream := os.stream_from_handle(handle)
 
 	// create a writer
-	writer, io_ok := io.to_writer(stream)
-	defer io.destroy(writer)
+	writer_stream, io_ok := io.to_writer(stream)
+	defer io.destroy(writer_stream)
 	if !io_ok {return io_ok}
 
 	// define bufio_reader
 	bufio_writer: bufio.Writer
-	bufio.writer_init(&bufio_writer, writer, allocator = allocator)
+	bufio.writer_init(&bufio_writer, writer_stream, allocator = allocator)
 	defer bufio.writer_destroy(&bufio_writer)
 
 	switch flag {
@@ -84,14 +90,7 @@ convert_las :: proc(
 		}
 
 		// TODO(Rey): figure out how to write these thing to a file
-		ok = write_to_csv(
-			&bufio_writer,
-			&writer,
-			config,
-			las_data,
-			allocator = allocator,
-			loc = loc,
-		)
+		ok = write_to_csv(&writer_stream, config, las_data, allocator = allocator, loc = loc)
 		return ok
 	case .JSON:
 		{
@@ -99,14 +98,7 @@ convert_las :: proc(
 			// TODO(Rey): what possible error in this case?
 		}
 
-		ok = write_to_json(
-			&bufio_writer,
-			&writer,
-			config,
-			las_data,
-			allocator = allocator,
-			loc = loc,
-		)
+		ok = write_to_json(&writer_stream, config, las_data, allocator = allocator, loc = loc)
 		return ok
 
 	}

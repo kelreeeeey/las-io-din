@@ -1,0 +1,257 @@
+{
+    "file_name": "./assets/example_1_canadian_well_logging_society.las",
+    "version": {
+        "vers": {
+            "mnemonic": "VERS",
+            "unit": "",
+            "value": 2.0000000000000000,
+            "descr": "CWLS LOG ASCII STANDARD -VERSION 2.0"
+        },
+        "wrap": {
+            "mnemonic": "WRAP",
+            "unit": "",
+            "value": false,
+            "descr": "ONE LINE PER DEPTH STEP"
+        },
+        "add": [
+
+        ]
+    },
+    "well_info": {
+        "len": 12,
+        "items": {
+            "4": {
+                "mnemonic": "WELL",
+                "unit": "",
+                "value": "ANY ET AL 12-34-12-34",
+                "descr": "WELL"
+            },
+            "5": {
+                "mnemonic": "FLD",
+                "unit": "",
+                "value": "WILDCAT",
+                "descr": "FIELD"
+            },
+            "6": {
+                "mnemonic": "LOC",
+                "unit": "",
+                "value": "12-34-12-34W5M",
+                "descr": "LOCATION"
+            },
+            "7": {
+                "mnemonic": "PROV",
+                "unit": "",
+                "value": "ALBERTA",
+                "descr": "PROVINCE"
+            },
+            "0": {
+                "mnemonic": "STRT",
+                "unit": "M",
+                "value": 1670.0000000000000000,
+                "descr": "START DEPTH"
+            },
+            "1": {
+                "mnemonic": "STOP",
+                "unit": "M",
+                "value": 1669.7500000000000000,
+                "descr": "STOP DEPTH"
+            },
+            "2": {
+                "mnemonic": "STEP",
+                "unit": "M",
+                "value": -0.1250000000000000,
+                "descr": "STEP"
+            },
+            "3": {
+                "mnemonic": "COMP",
+                "unit": "",
+                "value": "ANY OIL COMPANY INC.",
+                "descr": "COMPANY"
+            },
+            "8": {
+                "mnemonic": "SRVC",
+                "unit": "",
+                "value": "ANY LOGGING COMPANY INC.",
+                "descr": "SERVICE COMPANY"
+            },
+            "9": {
+                "mnemonic": "DATE",
+                "unit": "",
+                "value": "13-DEC-86",
+                "descr": "LOG DATE"
+            },
+            "10": {
+                "mnemonic": "UWI",
+                "unit": "",
+                "value": "100123401234W500",
+                "descr": "UNIQUE WELL ID"
+            },
+            "11": {
+                "mnemonic": "LIC",
+                "unit": "",
+                "value": 23412.0000000000000000,
+                "descr": "ERCB LICENCE NUMB"
+            }
+        },
+        "null": {
+            "mnemonic": "NULL",
+            "unit": "",
+            "value": -999.2500000000000000,
+            "descr": "NULL VALUE"
+        }
+    },
+    "curve_info": {
+        "len": 8,
+        "curves": {
+            "3": {
+                "mnemonic": "NPHI",
+                "unit": "V/V",
+                "value": "42 890 00 00",
+                "descr": "4 NEUTRON POROSITY"
+            },
+            "2": {
+                "mnemonic": "RHOB",
+                "unit": "K/M3",
+                "value": "45 350 01 00",
+                "descr": "3 BULK DENSITY"
+            },
+            "1": {
+                "mnemonic": "DT",
+                "unit": "US/M",
+                "value": "60 520 32 00",
+                "descr": "2 SONIC TRANSIT TIME"
+            },
+            "0": {
+                "mnemonic": "DEPT",
+                "unit": "M",
+                "value": "",
+                "descr": "1 DEPTH"
+            },
+            "7": {
+                "mnemonic": "ILD",
+                "unit": "OHMM",
+                "value": "07 120 46 00",
+                "descr": "8 DEEP RESISTIVITY"
+            },
+            "6": {
+                "mnemonic": "ILM",
+                "unit": "OHMM",
+                "value": "07 120 44 00",
+                "descr": "7 MEDIUM RESISTIVITY"
+            },
+            "5": {
+                "mnemonic": "SFLA",
+                "unit": "OHMM",
+                "value": "07 222 01 00",
+                "descr": "6 SHALLOW RESISTIVITY"
+            },
+            "4": {
+                "mnemonic": "SFLU",
+                "unit": "OHMM",
+                "value": "07 220 04 00",
+                "descr": "5 SHALLOW RESISTIVITY"
+            }
+        }
+    },
+    "parameter_info": {
+        "len": 7,
+        "params": [
+            {
+                "mnemonic": "MUD",
+                "unit": "",
+                "value": "GEL CHEM",
+                "descr": "MUD TYPE"
+            },
+            {
+                "mnemonic": "BHT",
+                "unit": "DEGC",
+                "value": 35.5000000000000000,
+                "descr": "BOTTOM HOLE TEMPERATURE"
+            },
+            {
+                "mnemonic": "CSGL",
+                "unit": "M",
+                "value": 124.5999999999999943,
+                "descr": "BASE OF CASING"
+            },
+            {
+                "mnemonic": "MATR",
+                "unit": "",
+                "value": "SAND",
+                "descr": "NEUTRON MATRIX"
+            },
+            {
+                "mnemonic": "MDEN",
+                "unit": "",
+                "value": 2710.0000000000000000,
+                "descr": "LOGGING MATRIX DENSITY"
+            },
+            {
+                "mnemonic": "RMF",
+                "unit": "OHMM",
+                "value": 0.2160000000000000,
+                "descr": "MUD FILTRATE RESISTIVITY"
+            },
+            {
+                "mnemonic": "DFD",
+                "unit": "K/M3",
+                "value": 1525.0000000000000000,
+                "descr": "DRILL FLUID DENSITY"
+            }
+        ]
+    },
+    "other_info": {
+        "len": 2,
+        "info": [
+            " Note: The logging tools became stuck at 625 metres causing the",
+            "data between 625 metres and 615 metres to be invalid."
+        ]
+    },
+    "log_data": {
+        "wrap": false,
+        "nrows": 3,
+        "ncurves": 8,
+        "logs": {
+            "0": [
+                1670.0000000000000000,
+                1669.8750000000000000,
+                1669.7500000000000000
+            ],
+            "1": [
+                123.4500000000000028,
+                123.4500000000000028,
+                123.4500000000000028
+            ],
+            "2": [
+                2550.0000000000000000,
+                2550.0000000000000000,
+                2550.0000000000000000
+            ],
+            "3": [
+                0.4500000000000000,
+                0.4500000000000000,
+                0.4500000000000000
+            ],
+            "4": [
+                123.4500000000000028,
+                123.4500000000000028,
+                123.4500000000000028
+            ],
+            "5": [
+                123.4500000000000028,
+                123.4500000000000028,
+                123.4500000000000028
+            ],
+            "6": [
+                110.2000000000000028,
+                110.2000000000000028,
+                110.2000000000000028
+            ],
+            "7": [
+                5.5999999999999996,
+                5.5999999999999996,
+                105.5999999999999943
+            ]
+        }
+    }
+}

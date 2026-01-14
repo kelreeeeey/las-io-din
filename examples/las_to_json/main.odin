@@ -2,6 +2,7 @@ package main
 
 import "core:os"
 import "core:fmt"
+import "core:encoding/json"
 import ls "../../lasiodin"
 import conv "../../lasiodin/converters"
 
@@ -21,12 +22,21 @@ main :: proc() {
 	out_name: string = os.args[2]
 	ok_conv := conv.convert_las(
 		out_name,
-		{delimiter = string(","), line_separator = string("\n")},
+		{
+			json_marshal_options = json.Marshal_Options {
+				// Adds indentation etc
+				pretty         = true,
+				use_spaces     = true,
+				// Output enum member names instead of numeric value.
+				use_enum_names = true,
+				indentation    = 0,
+			},
+		},
 		&las_file,
-		.CSV,
+		.JSON,
 		allocator = context.allocator,
 	)
-	if ok_conv != nil {fmt.eprintfln("Failed to convert the data to CSV, err: %v", ok_conv)}
+	if ok_conv != nil {fmt.eprintfln("Failed to convert the data to JSON, err: %v", ok_conv)}
 
 }
 

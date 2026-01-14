@@ -89,3 +89,34 @@ tasks:
       - ./lasiodin/*.odin
       - ./examples/las_to_csv/main.odin
 
+
+  build_las_to_json:
+    cmds:
+      - odin build ./examples/las_to_json -out:./bin/las_to_json.exe -o:speed
+    silent: true
+    method: none
+    aliases:
+      - l2jb
+    generates:
+      - ./bin/las_to_json.exe
+    sources:
+      - ./lasiodin/**/*.odin
+      - ./lasiodin/*.odin
+      - ./examples/las_to_json/main.odin
+
+  las_to_json:
+    deps: [build_las_to_json]
+    cmds:
+      - rm ./assets/example_1_canadian_well_logging_society.json
+      - ./bin/las_to_json.exe ./assets/example_1_canadian_well_logging_society.las ./assets/example_1_canadian_well_logging_society.json
+      - cat ./assets/example_1_canadian_well_logging_society.json
+    watch: true
+    silent: true
+    method: none
+    aliases:
+      - l2jr
+    sources:
+      - ./lasiodin/**/*.odin
+      - ./lasiodin/*.odin
+      - ./examples/las_to_json/main.odin
+
